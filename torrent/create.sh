@@ -11,12 +11,11 @@
 
 # shellcheck source=lib.sh
 # shellcheck disable=SC2046
-source /var/scripts/fetch_lib.sh || source <(curl -sL https://raw.githubusercontent.com/nextcloud/vm/main/lib.sh)
 
 # Check for errors + debug code and abort if something isn't right
 # 1 = ON
 # 0 = OFF
-DEBUG=0
+DEBUG=1
 debug_mode
 
 # Check if root
@@ -27,7 +26,7 @@ install_if_not transmission-cli
 install_if_not transmission-daemon
 
 TRANSMISSION_DL_DIR="/var/lib/transmission-daemon/downloads"
-NC_ZIP="NextcloudVM.zip"
+NC_ZIP="100GB_Nextcloud-VM_www.hanssonit.se.ova"
 
 # Modify transmission service file to fix https://github.com/transmission/transmission/issues/6991
 sed -i 's/Type=notify/Type=simple/' /etc/systemd/system/multi-user.target.wants/transmission-daemon.service
@@ -37,8 +36,8 @@ systemctl daemon-reload
 if [ ! -f "$TRANSMISSION_DL_DIR"/"$NC_ZIP" ]
 then
     # Download the VM only if it doesn't exist
-    curl_to_dir https://download.kafit.se/s/dnkWptz8AK4JZDM download "$TRANSMISSION_DL_DIR"
-    mv "$TRANSMISSION_DL_DIR"/download "$TRANSMISSION_DL_DIR"/"$NC_ZIP"
+    curl_to_dir "https://download.kafit.se/public.php/dav/files/dnkWptz8AK4JZDM/30.0.1%20-%20HUB%209/" 100GB_Nextcloud-VM_www.hanssonit.se.ova "$TRANSMISSION_DL_DIR"
+    mv "$TRANSMISSION_DL_DIR"/100GB_Nextcloud-VM_www.hanssonit.se.ova "$TRANSMISSION_DL_DIR"/"$NC_ZIP"
 else
     echo "$NC_ZIP already exists in transmission default downloads directory, skipping download"
 fi
@@ -50,7 +49,7 @@ fi
 
 # Create torrent
 curl_to_dir "$GITHUB_REPO"/torrent trackers.txt /tmp
-transmission-create -o $TRANSMISSION_DL_DIR/nextcloudvmhanssonit.torrent -c "https://www.hanssonit.se/nextcloud-vm" -t "$(cat /tmp/trackers.txt)" "$TRANSMISSION_DL_DIR"/"$NC_ZIP"
+transmission-create -o $TRANSMISSION_DL_DIR/nextcloudvmhanssonit.torrent -c "https://www.hanssonit.se/nextcloud-vm" -t $(cat /tmp/trackers.txt) "$TRANSMISSION_DL_DIR"/"$NC_ZIP"
 
 # Seed it!
 transmission-remote -n 'transmission:transmission' --torrent="$TRANSMISSION_DL_DIR/nextcloudvmhanssonit.torrent" -a "$TRANSMISSION_DL_DIR/nextcloudvmhanssonit.torrent" --start --verify
